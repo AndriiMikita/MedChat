@@ -7,6 +7,7 @@ from environs import Env
 from langchain.document_loaders import UnstructuredXMLLoader
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.embeddings import OllamaEmbeddings
+from langchain.chains import RetrievalQA
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from settings import DATA_DIR_PATH, ENV_DIR_PATH
 
@@ -18,7 +19,7 @@ def run_llm(query: str):
     text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
     chunks = text_splitter.split_documents(documents=docs)
 
-    embeddings = OllamaEmbeddings(model="llama2:7b",)
+    embeddings = OllamaEmbeddings(model="llama2",)
     index_name = "med-chat"
 
     try:
@@ -30,9 +31,13 @@ def run_llm(query: str):
         print("The index was created successfully")
 
 
-    model = "llama2"
-    ollama = Ollama(model=model)
-    result = ollama(prompt=query)
+    qa = RetrievalQA.from_chain_type(
+        llm=Ollama(model="llama2"),
+        chain_type="stuff",
+        retriever=vectorstore.as_retriever()
+    )
+    
+    result = qa({"query": query})
     return result
 
 
